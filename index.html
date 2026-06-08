@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LifeOps Display Terminal</title>
+  <!-- Tailwind CSS & Google Font for elegant styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Space+Grotesk:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Space Grotesk', 'JetBrains Mono', sans-serif;
+      background-image: 
+        linear-gradient(rgba(244, 63, 94, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(244, 63, 94, 0.02) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+  </style>
+</head>
+<body class="bg-[#0c0c0e] text-[#e2e8f0] h-screen overflow-hidden flex flex-col p-8 justify-between">
+
+  <script>
+    const SERVER_IP = "http://localhost:3000"; 
+  </script>
+
+  <!-- Header: LifeOps ASCII Art & Uptime status -->
+  <header class="flex justify-between items-start border-b border-white/5 pb-4">
+    <div class="flex flex-col">
+      <pre class="text-rose-500 text-[8px] md:text-[10px] leading-[10px] font-mono font-bold tracking-tight select-none">
+    __    _ ____     ____            
+   / /   (_) __/__  / __ \____  _____
+  / /   / / /_/ _ \/ / / / __ \/ ___/
+ / /___/ / __/  __/ /_/ / /_/ (__  ) 
+/_____/_/_/  \___/\____/ .___/____/  
+                      /_/            
+      </pre>
+      <p class="text-[10px] uppercase tracking-[0.2em] font-medium text-slate-500 mt-2 font-mono">
+        Self-Hosted Intelligence Node v1.0.0
+      </p>
+    </div>
+    <div class="text-right font-mono text-[11px] text-slate-400">
+      <div id="conn-state" class="flex items-center gap-1.5 text-emerald-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>CONNECTED</span>
+      </div>
+      <div class="text-[9px] text-slate-600 mt-1 uppercase">NODE INTEGRITY: ACTIVE</div>
+    </div>
+  </header>
+
+  <!-- Main Display Screen -->
+  <main class="grid grid-cols-12 gap-8 flex-grow my-6 items-stretch">
+    
+    <!-- Left Column: Clock and Weather -->
+    <div class="col-span-5 flex flex-col justify-between">
+      <!-- High contrast clock -->
+      <div class="bg-slate-950/45 p-6 rounded-3xl border border-white/5 flex-grow flex flex-col justify-center">
+        <h1 id="clock" class="text-6xl md:text-8xl font-light font-mono text-white leading-none tracking-tighter">
+          00:00<span id="clock-sec" class="text-xl md:text-3xl text-rose-500 ml-1">:00</span>
+        </h1>
+        <p id="date" class="text-sm md:text-base text-slate-400 mt-4 font-medium">Loading local date...</p>
+      </div>
+
+      <!-- Weather display -->
+      <div class="bg-[#121216] border border-white/5 p-6 rounded-3xl flex items-center justify-between mt-6">
+        <div>
+          <span class="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">Weather Status</span>
+          <p id="weather-temp" class="text-3xl font-semibold text-white mt-1">--°C</p>
+          <p id="weather-cond" class="text-slate-400 text-xs mt-1">Reading Outside Sensor...</p>
+        </div>
+        <div class="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center">
+          <!-- Simple Cloud SVG -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.5 19c2.5 0 4.5-2 4.5-4.5 0-2.3-1.7-4.2-3.9-4.5-1-2.6-3.6-4.5-6.6-4.5-3.3 0-6.1 2.2-7 5.2C2.1 11.9 1 13.8 1 16c0 3.3 2.7 6 6 6h10.5"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: System Telemetry & Schedules -->
+    <div class="col-span-7 flex flex-col gap-6">
+      
+      <!-- Top Box: psutil Server Monitor -->
+      <div class="bg-[#121216] border border-white/5 p-6 rounded-3xl">
+        <h2 class="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold mb-4">Core Telemetry (psutil)</h2>
+        <div class="grid grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <div class="flex justify-between items-end text-[11px] font-mono">
+              <span class="text-slate-400">CPU LOAD</span>
+              <span id="stat-cpu" class="text-rose-400 font-bold">0%</span>
+            </div>
+            <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+              <div id="bar-cpu" class="h-full bg-rose-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between items-end text-[11px] font-mono">
+              <span class="text-slate-400">RAM USAGE</span>
+              <span id="stat-ram" class="text-sky-400 font-bold">0%</span>
+            </div>
+            <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+              <div id="bar-ram" class="h-full bg-sky-400 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between items-end text-[11px] font-mono">
+              <span class="text-slate-400">CORE TEMP</span>
+              <span id="stat-temp" class="text-amber-500 font-bold">0.0°C</span>
+            </div>
+            <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+              <div id="bar-temp" class="h-full bg-amber-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Grid: Transit and Calendar -->
+      <div class="grid grid-cols-2 gap-6 flex-grow">
+        <!-- Transit schedule -->
+        <div class="bg-[#121216] border border-white/5 p-6 rounded-3xl flex flex-col justify-between">
+          <div>
+            <h2 class="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold mb-3 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span> Transit Service
+            </h2>
+            <div id="transit-list" class="space-y-3">
+              <!-- Dynamically populated -->
+              <p class="text-xs text-slate-500">取得中...</p>
+            </div>
+          </div>
+          <p class="text-[9px] text-slate-600 font-mono mt-4">STATION: Abiko</p>
+        </div>
+
+        <!-- Today's Schedule -->
+        <div class="bg-[#121216] border border-white/5 p-6 rounded-3xl flex flex-col justify-between">
+          <div>
+            <h2 class="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold mb-3">Today's Schedule</h2>
+            <div id="calendar-list" class="space-y-2.5">
+              <!-- Dynamically populated -->
+              <p class="text-xs text-slate-500">取得中...</p>
+            </div>
+          </div>
+          <p id="task-left" class="text-[9px] text-slate-600 font-mono mt-4">SECURE LOCAL PERSISTENCE</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-white/5 pt-4 text-center">
+    <p class="text-[8px] text-slate-700 font-mono tracking-[0.4em]">LIFEOPS DISPLAY &bull; PERSISTENT AMBIENT OS</p>
+  </footer>
+
+  <!-- Live logic to tick the clock and pull from backend -->
+  <script>
+    // Live Clock ticking
+    function tick() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('clock').innerHTML = `${h}:${m}<span class="text-rose-500 text-xl md:text-3xl ml-1">:${s}</span>`;
+      
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('date').innerText = now.toLocaleDateString('ja-JP', options);
+    }
+    setInterval(tick, 1000);
+    tick();
+
+    // Calculate time left helper
+    function getMinutesLeft(timeStr) {
+      const [h, m] = timeStr.split(':').map(Number);
+      const now = new Date();
+      const target = new Date();
+      target.setHours(h, m, 0, 0);
+      let diff = target.getTime() - now.getTime();
+      if (diff < -10 * 60 * 1000) { // もしすでに10分以上過ぎていれば翌日扱い
+        target.setDate(target.getDate() + 1);
+        diff = target.getTime() - now.getTime();
+      }
+      const mins = Math.round(diff / 60000);
+      return mins <= 0 ? "直近" : `${mins}分`;
+    }
+
+    // Refresh dynamic telemetry via fetch
+    async function updateDashboard() {
+      const connState = document.getElementById('conn-state');
+      try {
+        const response = await fetch(`${SERVER_IP}/api/status`);
+        if (!response.ok) throw new Error("HTTP Error");
+        
+        const data = await response.json();
+        
+        // Connectivity Status Green
+        connState.className = "flex items-center gap-1.5 text-emerald-400";
+        connState.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>CONNECTED';
+
+        // 1. Update stats (CPU / RAM / TEMP)
+        document.getElementById('stat-cpu').innerText = `${data.system.cpu}%`;
+        document.getElementById('bar-cpu').style.width = `${data.system.cpu}%`;
+
+        document.getElementById('stat-ram').innerText = `${data.system.ram}%`;
+        document.getElementById('bar-ram').style.width = `${data.system.ram}%`;
+
+        document.getElementById('stat-temp').innerText = `${data.system.temp}°C`;
+        // スケールを100度上限としてバーを計算
+        document.getElementById('bar-temp').style.width = `${Math.min(100, (data.system.temp / 85) * 100)}%`;
+
+        // 2. Weather
+        document.getElementById('weather-temp').innerText = `${data.weather.temp}°C`;
+        document.getElementById('weather-cond').innerText = data.weather.condition === "Cloudy" ? "曇り (Overcast)" : data.weather.condition;
+
+        // 3. Trains (先発 & 次発)
+        const transitListOff = document.getElementById('transit-list');
+        transitListOff.innerHTML = '';
+        if (data.transit.next_trains && data.transit.next_trains.length > 0) {
+          data.transit.next_trains.forEach((train, index) => {
+            const timeLeft = getMinutesLeft(train.time);
+            const isNext = index === 0;
+            const item = document.createElement('div');
+            item.className = isNext 
+              ? 'p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl' 
+              : 'p-3 border border-white/5 rounded-xl opacity-70';
+            
+            item.innerHTML = `
+              <div class="flex justify-between items-center text-xs">
+                <div>
+                  <p class="font-mono ${isNext ? 'text-rose-400' : 'text-slate-400'}">${isNext ? '先発' : '次発'} ${train.time}</p>
+                  <p class="text-[10px] text-slate-500">上野行 (${train.type || 'Rapid'})</p>
+                </div>
+                <span class="font-mono font-bold text-lg ${isNext ? 'text-rose-400' : 'text-white'}">${timeLeft}</span>
+              </div>
+            `;
+            transitListOff.appendChild(item);
+          });
+        } else {
+          transitListOff.innerHTML = '<p class="text-xs text-slate-500">運行予定なし</p>';
+        }
+
+        // 4. Calendar Events
+        const calList = document.getElementById('calendar-list');
+        calList.innerHTML = '';
+        if (data.calendar && data.calendar.length > 0) {
+          data.calendar.slice(0, 3).forEach(ev => {
+            const row = document.createElement('div');
+            row.className = 'flex gap-3 text-xs';
+            row.innerHTML = `
+              <div class="flex flex-col items-center">
+                <span class="font-mono text-rose-400 font-semibold">${ev.time}</span>
+                <div class="w-px h-full bg-slate-800 my-1"></div>
+              </div>
+              <div class="flex-1 pb-2">
+                <p class="text-[12px] font-medium text-white">${ev.title}</p>
+              </div>
+            `;
+            calList.appendChild(row);
+          });
+          document.getElementById('task-left').innerText = `${data.calendar.length} AGENDA ITEMS REGISTERED`;
+        } else {
+          calList.innerHTML = '<p class="text-xs text-slate-500">本日の予定はありません</p>';
+          document.getElementById('task-left').innerText = "CALENDAR EMPTY";
+        }
+
+      } catch (err) {
+        // Connectivity Status Orange on Failure
+        connState.className = "flex items-center gap-1.5 text-amber-500";
+        connState.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span>OFFLINE';
+        console.error("Link-state terminal connection error: ", err);
+      }
+    }
+
+    // Interval telemetry loops (12 seconds)
+    setInterval(updateDashboard, 12000);
+    updateDashboard();
+  </script>
+</body>
+</html>

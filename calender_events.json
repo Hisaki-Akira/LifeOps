@@ -1,0 +1,17 @@
+[
+  {
+    "id": "1",
+    "time": "19:00",
+    "title": "Computer Club Meeting"
+  },
+  {
+    "id": "2",
+    "time": "21:30",
+    "title": "LifeOps Deployment Review"
+  },
+  {
+    "id": "3",
+    "time": "23:00",
+    "title": "Backup Cron Trigger Verify"
+  }
+]
