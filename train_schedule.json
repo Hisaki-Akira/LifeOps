@@ -3,7 +3,6 @@
   "direction": "上野・品川方面 (上野東京ライン・常磐線快速)",
   "type": "平日ダイヤ",
   "timetable": [
-    { "hour": 4, "trains": [{ "min": 48, "type": "快速", "destination": "上野" }] },
-    ]}
+    { "hour": 4, "trains": [{ "min": 48, "type": "快速", "destination": "上野" }] }
   ]
 }
